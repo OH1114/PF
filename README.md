@@ -12,11 +12,12 @@
 6. `portfolios/06_django_booking_mock`: Django予約管理模擬案件
 7. `portfolios/07_nestjs_linebot_mock`: NestJS LINE通知Bot模擬案件
 8. `portfolios/08_laravel_ec_mock`: Laravel ECバックオフィス模擬案件
+9. `portfolios/09_saas_monetization_ops_mock`: Demo版/有料版を切り替えるSaaS課金運用模擬案件
 
 ## 先に読む
 - `docs/demo_preparation_guide_ja.md`
 - `docs/portfolio_ux_story_ja.md`
 - `docs/beginner_onepager_engineering_guide_ja.md`
 - `docs/freelance_frameworks_master_guide_ja.md`
+- `docs/service_stack_selection_playbook_ja.md`
 - `docs/portfolio_file_structure_ja.md`
-

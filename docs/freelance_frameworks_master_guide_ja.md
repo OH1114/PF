@@ -66,6 +66,7 @@
 | `portfolios/06_django_booking_mock` | 予約管理システム | Django | モデル設計、管理画面、業務テーブル構成 |
 | `portfolios/07_nestjs_linebot_mock` | LINE通知Bot/API | NestJS | DI構造、Webhook、DB層分離 |
 | `portfolios/08_laravel_ec_mock` | 小規模EC管理バックオフィス | Laravel | MVC構成、ルーティング、DBマイグレーション |
+| `portfolios/09_saas_monetization_ops_mock` | SaaS課金運用（Demo版/有料版切替） | Next.js | プラン設計、機能制限、課金移行導線、運用監視 |
 
 ---
 
@@ -130,3 +131,73 @@ LINE_CHANNEL_ACCESS_TOKEN=xxxx
 > 3) 機能をMVPに限定して早期リリースを優先しました。
 > 次フェーズで、監査ログ・通知・分析基盤を段階的に追加可能です。
 
+---
+
+## 8. 案件を漏れなくこなすための「サービススタック」必須一覧
+
+実務ではフレームワーク単体より、以下の周辺サービスを組み合わせる案件が大半です。
+
+| 領域 | 必須度 | 候補サービス | いつ使うか | 最低限の実装ポイント |
+|---|---|---|---|---|
+| 認証/ユーザー管理 | 高 | Clerk / Auth0 / Firebase Auth / Cognito | ログイン、権限管理、組織管理 | RBAC（管理者/一般）、メール検証、パスワード再発行 |
+| 決済/サブスク | 高 | Stripe / Paddle | SaaS課金、従量課金、請求書 | Webhook検証、プランID管理、解約/返金フロー |
+| DB/キャッシュ | 高 | PostgreSQL + Redis / Supabase | データ永続化、セッション、高速化 | マイグレーション、バックアップ、TTL設計 |
+| ストレージ/CDN | 高 | S3 / Cloudflare R2 + CloudFront | 画像・CSV・添付ファイル配信 | 署名URL、サイズ制限、MIMEチェック |
+| 監視/エラー検知 | 高 | Sentry / Datadog / New Relic | 本番障害の即時検知 | リリースタグ、通知先、重大度分類 |
+| 分析/プロダクト計測 | 中 | GA4 / Mixpanel / PostHog | 導線改善、継続率改善 | KPIイベント命名規約、PII除外 |
+| メール/通知 | 高 | SendGrid / Resend / SES / LINE | 認証・請求・障害通知 | テンプレ管理、再送制御、失敗ログ |
+| ジョブ/ワークフロー | 中 | GitHub Actions / Celery / BullMQ | バッチ、定期処理、非同期処理 | 冪等性、リトライ回数、死活監視 |
+| API管理/ドキュメント | 高 | OpenAPI / Swagger / Stoplight | 外部連携・保守引継ぎ | スキーマ固定、バージョニング、破壊的変更管理 |
+| インフラ/IaC | 中 | Terraform / Pulumi / CDK | 複数環境の再現、監査対応 | dev/stg/prod分離、Secrets分離 |
+| CI/CD | 高 | GitHub Actions / CircleCI | 品質担保とデプロイ自動化 | lint/test/build、タグ運用、ロールバック |
+| 法務/運用補助 | 中 | Notion / Confluence / Docusign | 要件・契約・保守運用 | SOW、受入条件、障害時の責任分界 |
+
+---
+
+## 9. 追加PF（09）が他構成と何が違うか
+
+`portfolios/09_saas_monetization_ops_mock` は、既存PFの「機能開発中心」から一段進めて、**売上化と運用**に焦点を当てています。
+
+| 比較対象 | 既存PF（01〜08） | 追加PF（09） |
+|---|---|---|
+| 主目的 | 画面/API/業務ロジック実装の提示 | Demo版→有料版の収益化導線まで提示 |
+| 機能制御 | 実装例が中心 | プラン別機能ゲート（`demo/pro/enterprise`）を明示 |
+| 決済連携 | ほぼ未対象 | Stripe前提の課金イベント設計を含む |
+| 運用観点 | 開発体験重視 | 課金失敗、監視、障害時運用までカバー |
+| 提案時の強み | 技術力の説明 | 「売上に繋がる設計」が説明できる |
+
+---
+
+## 10. デモ版と有料版にする場合の実装手順（実務向け）
+
+1. プラン定義を固定する  
+   - `demo`（機能制限あり、無料）  
+   - `pro`（主機能解放、月額）  
+   - `enterprise`（追加サポート、個別見積）
+2. 機能ゲートをコード化する  
+   - 例: エクスポート、API連携、利用回数上限を `featureGate(plan)` で判定。
+3. 決済イベントを契約状態へ反映する  
+   - `checkout.completed` で `pro` へ昇格。  
+   - `invoice.payment_failed` で猶予/制限。  
+   - `customer.subscription.deleted` で `demo` に戻す。
+4. デモ版のUXを作る  
+   - 触って価値が分かる最小機能は開放。  
+   - 成果物の一部を意図的に制限し、アップグレード導線を明記。
+5. 有料版の利用規約とSLAを準備する  
+   - サポート範囲、返信SLA、返金条件、障害時の連絡方法。
+6. 本番移行時の運用設定  
+   - 監視（Sentry）、分析（GA4/PostHog）、通知（Slack/メール）を有効化。  
+   - デモ環境と本番環境でキー・DB・Webhook URLを分離。
+
+---
+
+## 11. 提案時に差が出る納品物チェックリスト
+
+- [ ] 要件定義書（業務要件・非機能要件・制約条件）
+- [ ] 画面遷移図と主要画面ワイヤー
+- [ ] API仕様書（OpenAPI）
+- [ ] ER図とテーブル定義
+- [ ] `.env.example` と環境変数表
+- [ ] デモ版と有料版の機能差分表
+- [ ] 障害対応Runbook（検知/一次切り分け/復旧）
+- [ ] 保守運用契約の範囲（対応時間・対象外事項）
